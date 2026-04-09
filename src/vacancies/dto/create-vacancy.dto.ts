@@ -1,23 +1,29 @@
-import { IsString, IsNumber, Min } from 'class-validator';
+import { IsString, IsNumber, Min, IsOptional } from 'class-validator';
 
 export class CreateVacancyDto {
+  @IsOptional()
   @IsString()
-  title!: string;
+  title?: string;
 
+  @IsOptional()
   @IsString()
-  department!: string;
+  department?: string;
 
+  @IsOptional()
   @IsString()
-  location!: string;
+  location?: string;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  salaryMin!: number;
+  salaryMin?: number;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  salaryMax!: number;
+  salaryMax?: number;
 
+  @IsOptional()
   @IsString()
-  description!: string;
+  description?: string;
 }

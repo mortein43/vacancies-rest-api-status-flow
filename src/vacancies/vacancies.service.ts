@@ -15,11 +15,11 @@ export class VacanciesService {
   private vacancies: Vacancy[] = [];
 
   findAll(status?: VacancyStatus, department?: string): Vacancy[] {
-    let results = this.vacancies;
-    if (status) results = results.filter((v) => v.status === status);
-    if (department)
-      results = results.filter((v) => v.department === department);
-    return results;
+    return this.vacancies.filter((v) => {
+      if (status && v.status !== status) return false;
+      if (department && v.department !== department) return false;
+      return true;
+    });
   }
 
   findOne(id: string): Vacancy {
