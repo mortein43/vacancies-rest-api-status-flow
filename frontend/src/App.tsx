@@ -1,121 +1,154 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import "./App.css";
+import { useState, useEffect } from "react";
+import { useVacancies } from "./hooks/useVacancies";
+import { VacancyList } from "./components/VacancyList";
+import { VacancyForm } from "./components/VacancyForm";
+import { VacancyStatus } from "./types/vacancy";
+import type { Vacancy } from "./types/vacancy";
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [statusFilter, setStatusFilter] = useState<VacancyStatus | undefined>(
+    undefined,
+  );
+  const [departmentFilter, setDepartmentFilter] = useState<string>("");
+  const [debouncedDepartment, setDebouncedDepartment] = useState<string>("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedDepartment(departmentFilter);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [departmentFilter]);
+
+  const {
+    data: vacancies,
+    isLoading,
+    error,
+    addVacancy,
+    updateVacancy,
+    deleteVacancy,
+    clearError,
+  } = useVacancies(statusFilter, debouncedDepartment || undefined);
+
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingVacancy, setEditingVacancy] = useState<Vacancy | null>(null);
+
+  const handleAddClick = () => {
+    setEditingVacancy(null);
+    clearError();
+    setIsFormOpen(true);
+  };
+
+  const handleEditClick = (vacancy: Vacancy) => {
+    setEditingVacancy(vacancy);
+    clearError();
+    setIsFormOpen(true);
+  };
+
+  const handleCancel = () => {
+    setIsFormOpen(false);
+    clearError();
+  };
+
+  const handleDeleteClick = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this vacancy?")) {
+      try {
+        await deleteVacancy(id);
+      } catch {
+        // Error is handled in the hook
+      }
+    }
+  };
+
+  const handleFormSubmit = async (
+    formData: Omit<Vacancy, "id" | "createdAt">,
+  ) => {
+    try {
+      if (editingVacancy) {
+        await updateVacancy(editingVacancy.id, formData);
+      } else {
+        await addVacancy(formData);
+      }
+      setIsFormOpen(false);
+      clearError();
+    } catch {
+      // Error is already set in hook
+    }
+  };
+
+  if (isLoading && vacancies.length === 0) {
+    return (
+      <div className="container">
+        <div className="loading">Loading vacancies...</div>
+        {error && <div className="error-banner">Error: {error.message}</div>}
+      </div>
+    );
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="container">
+      <header className="app-header">
+        <h1>Vacancy Management</h1>
+        {!isFormOpen && (
+          <button className="btn-primary" onClick={handleAddClick}>
+            Add New Vacancy
+          </button>
+        )}
+      </header>
 
-      <div className="ticks"></div>
+      {error && <div className="error-banner">Error: {error.message}</div>}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
+      <main>
+        {isFormOpen ? (
+          <div className="form-container">
+            <VacancyForm
+              initialData={editingVacancy || undefined}
+              onSubmit={handleFormSubmit}
+              onCancel={handleCancel}
+            />
+          </div>
+        ) : (
+          <>
+            <div className="filters">
+              <div className="filter-group">
+                <label>Status Filter:</label>
+                <select
+                  value={statusFilter || ""}
+                  onChange={(e) =>
+                    setStatusFilter(
+                      (e.target.value as VacancyStatus) || undefined,
+                    )
+                  }
                 >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+                  <option value="">All Statuses</option>
+                  {Object.values(VacancyStatus).map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="filter-group">
+                <label>Department Filter:</label>
+                <input
+                  type="text"
+                  placeholder="Filter by department..."
+                  value={departmentFilter}
+                  onChange={(e) => setDepartmentFilter(e.target.value)}
+                />
+              </div>
+              {isLoading && (
+                <span className="loading-spinner">Searching...</span>
+              )}
+            </div>
+            <VacancyList
+              vacancies={vacancies}
+              onEdit={handleEditClick}
+              onDelete={handleDeleteClick}
+            />
+          </>
+        )}
+      </main>
+    </div>
+  );
 }
-
-export default App
