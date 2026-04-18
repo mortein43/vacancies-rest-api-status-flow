@@ -1,4 +1,5 @@
-import { IsString, IsNumber, Min, IsOptional } from 'class-validator';
+import { IsString, IsNumber, Min, IsOptional, IsEnum } from 'class-validator';
+import { VacancyStatus } from '../enums/vacancy-status.enum';
 
 export class CreateVacancyDto {
   @IsOptional()
@@ -22,6 +23,10 @@ export class CreateVacancyDto {
   @IsNumber()
   @Min(0)
   salaryMax?: number;
+
+  @IsOptional()
+  @IsEnum(VacancyStatus)
+  status?: VacancyStatus;
 
   @IsOptional()
   @IsString()

@@ -22,17 +22,17 @@ export class VacanciesController {
   findAll(
     @Query('status') status?: VacancyStatus,
     @Query('department') department?: string,
-  ): Vacancy[] {
+  ): Promise<Vacancy[]> {
     return this.vacanciesService.findAll(status, department);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Vacancy {
+  findOne(@Param('id') id: string): Promise<Vacancy> {
     return this.vacanciesService.findOne(id);
   }
 
   @Post()
-  create(@Body() createDto: CreateVacancyDto): Vacancy {
+  create(@Body() createDto: CreateVacancyDto): Promise<Vacancy> {
     return this.vacanciesService.create(createDto);
   }
 
@@ -40,7 +40,7 @@ export class VacanciesController {
   update(
     @Param('id') id: string,
     @Body() updateDto: UpdateVacancyDto,
-  ): Vacancy {
+  ): Promise<Vacancy> {
     return this.vacanciesService.update(id, updateDto);
   }
 
@@ -48,12 +48,12 @@ export class VacanciesController {
   updateStatus(
     @Param('id') id: string,
     @Body('status') status: VacancyStatus,
-  ): Vacancy {
+  ): Promise<Vacancy> {
     return this.vacanciesService.updateStatus(id, status);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string): void {
+  remove(@Param('id') id: string): Promise<void> {
     return this.vacanciesService.remove(id);
   }
 }

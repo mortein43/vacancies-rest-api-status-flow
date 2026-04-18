@@ -2,84 +2,106 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ConflictException,
 } from '@nestjs/common';
 import { CreateVacancyDto } from './dto/create-vacancy.dto';
 import { randomUUID } from 'crypto';
 import { Vacancy } from '../vacancies/entities/vacancies.entity';
 import { VacancyStatus } from './enums/vacancy-status.enum';
 import { UpdateVacancyDto } from './dto/update-vacancy.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, ILike } from 'typeorm';
+import { FindOptionsWhere } from 'typeorm';
 
 @Injectable()
 export class VacanciesService {
-  private vacancies: Vacancy[] = [];
+  constructor(
+    @InjectRepository(Vacancy)
+    private readonly repo: Repository<Vacancy>,
+  ) {}
 
-  findAll(status?: VacancyStatus, department?: string): Vacancy[] {
-    return this.vacancies.filter((v) => {
-      if (status && v.status !== status) return false;
-      if (department && v.department !== department) return false;
-      return true;
-    });
+  async findAll(
+    status?: string,
+    department?: string,
+  ): Promise<Vacancy[]> {
+    console.log(`Fetching vacancies with filters: status=${status}, department=${department}`);
+    const where: FindOptionsWhere<Vacancy> = {};
+
+    if (status) {
+      // Find matching enum value by case-insensitive comparison if needed
+      const foundStatus = Object.values(VacancyStatus).find(
+        (s) => s.toLowerCase() === status.toLowerCase(),
+      );
+      if (foundStatus) {
+        where.status = foundStatus;
+      }
+    }
+    
+    if (department) {
+      where.department = ILike(`%${department}%`);
+    }
+
+    return this.repo.find({ where, order: { createdAt: 'DESC' } });
   }
 
-  findOne(id: string): Vacancy {
-    const vacancy = this.vacancies.find((v) => v.id === id);
+  async findOne(id: string): Promise<Vacancy> {
+    const vacancy = await this.repo.findOneBy({ id });
     if (!vacancy)
       throw new NotFoundException(`Vacancy with id ${id} not found`);
     return vacancy;
   }
 
-  create(createDto: CreateVacancyDto): Vacancy {
-    const vacancy = new Vacancy({
+  async create(createDto: CreateVacancyDto): Promise<Vacancy> {
+    const vacancy = this.repo.create({
       ...createDto,
       id: randomUUID(),
-      status: VacancyStatus.Draft,
+      status: createDto.status || VacancyStatus.Draft,
       createdAt: new Date(),
     });
 
-    this.vacancies.push(vacancy);
-    return vacancy;
+    return this.repo.save(vacancy);
   }
 
-  update(id: string, updateDto: UpdateVacancyDto): Vacancy {
-    const vacancy = this.findOne(id);
-    Object.assign(vacancy, updateDto);
-    return vacancy;
-  }
+  async update(id: string, updateDto: UpdateVacancyDto): Promise<Vacancy> {
+    const vacancy = await this.findOne(id);
 
-  updateStatus(id: string, newStatus: VacancyStatus): Vacancy {
-    const vacancy = this.findOne(id);
-
-    if (!this.isValidTransition(vacancy.status, newStatus)) {
-      throw new BadRequestException(
-        `Invalid status transition from ${vacancy.status} to ${newStatus}`,
-      );
+    if (updateDto.status && updateDto.status !== vacancy.status) {
+      this.isValidTransition(vacancy.status, updateDto.status);
     }
+
+    Object.assign(vacancy, updateDto);
+
+    return this.repo.save(vacancy);
+  }
+
+  async updateStatus(id: string, newStatus: VacancyStatus): Promise<Vacancy> {
+    const vacancy = await this.findOne(id);
+
+    this.isValidTransition(vacancy.status, newStatus);
 
     vacancy.status = newStatus;
-    return vacancy;
+    return this.repo.save(vacancy);
   }
 
-  remove(id: string) {
-    const index = this.vacancies.findIndex((v) => v.id === id);
-    if (index === -1)
+  async remove(id: string): Promise<void> {
+    const vacancy = await this.repo.findOneBy({ id });
+    if (!vacancy)
       throw new NotFoundException(`Vacancy with id ${id} not found`);
-    if (this.vacancies[index].status !== VacancyStatus.Draft) {
-      throw new ConflictException(
-        'Only vacancies with Draft status can be deleted',
-      );
-    }
 
-    this.vacancies.splice(index, 1);
+    await this.repo.remove(vacancy);
   }
 
-  private isValidTransition(from: VacancyStatus, to: VacancyStatus): boolean {
+  private isValidTransition(from: VacancyStatus, to: VacancyStatus): void {
     const transition: Record<VacancyStatus, VacancyStatus[]> = {
       Draft: [VacancyStatus.Open],
       Open: [VacancyStatus.Paused, VacancyStatus.Closed],
       Paused: [VacancyStatus.Open, VacancyStatus.Closed],
       Closed: [],
     };
-    return transition[from].includes(to);
+
+    if (!transition[from].includes(to)) {
+      throw new BadRequestException(
+        `Invalid status transition from ${from} to ${to}`,
+      );
+    }
   }
 }
