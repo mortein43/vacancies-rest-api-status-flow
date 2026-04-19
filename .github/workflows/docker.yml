@@ -1,0 +1,40 @@
+name: Docker and Build
+
+on:
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor}}
+          password: ${{ secrets.GITHUB_TOKEN}}
+
+      - name: Set repo lowercase
+        run: echo "REPO=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      - name: Build backend
+        run: |
+          docker build -t ghcr.io/$REPO-backend:${{ github.sha }} ./backend
+
+      - name: Build frontend
+        run: |
+          docker build -t ghcr.io/$REPO-frontend:${{ github.sha }} ./frontend
+
+      - name: Push backend
+        run: docker push ghcr.io/$REPO-backend:${{ github.sha }}
+
+      - name: Push frontend
+        run: docker push ghcr.io/$REPO-frontend:${{ github.sha }}
