@@ -23,7 +23,7 @@ jobs:
 
             docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
 
-            docker pull ghcr.io/${{ github.repository }}-backend:${{ github.event.workflow_run.head_sha }}
-            docker pull ghcr.io/${{ github.repository }}-frontend:${{ github.event.workflow_run.head_sha }}
+            docker pull ghcr.io/${{ github.repository }}-backend:${{ github.sha }}
+            docker pull ghcr.io/${{ github.repository }}-frontend:${{ github.sha }}
 
             docker compose up -d
