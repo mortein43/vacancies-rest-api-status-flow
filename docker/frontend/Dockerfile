@@ -7,4 +7,8 @@ RUN npm install
 
 COPY . .
 
-CMD ["npm", "run", "dev", "--", "--host"]
+RUN npm run build
+
+RUN npm install -g serve
+
+CMD ["serve", "-s", "dist", "-l", "3000"]

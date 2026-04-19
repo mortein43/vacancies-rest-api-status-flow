@@ -2,48 +2,20 @@ services:
   backend:
     build:
       context: ../backend
-      dockerfile: ../docker/backend/Dockerfile
-    restart: always
     ports:
-      - "3000:3000"
-    volumes:
-      - ../backend:/app
-      - /app/node_modules
-    depends_on:
-      - db
+      - "8000:8000"
     environment:
       DATABASE_HOST: db
       DATABASE_PORT: 5432
-      DATABASE_USER: postgres
-      DATABASE_PASSWORD: "123456"
-      DATABASE_NAME: vacancies_db
-
-  db:
-    image: postgres:15
-    restart: always
-    environment:
-      POSTGRES_DB: vacancies_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: "123456"
-    ports:
-      - "1400:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
 
   frontend:
     build:
       context: ../frontend
-      dockerfile: ../docker/frontend/Dockerfile
-    restart: always
     ports:
-      - "3001:5173"
-    environment:
-      - VITE_API_URL=http://localhost:3000
-    volumes:
-      - ../frontend:/app
-      - /app/node_modules
-    depends_on:
-      - backend
+      - "3000:3000"
+    environment: VITE_API_URL=http://46.62.146.164:8000
 
-volumes:
-  pgdata:
+  db:
+    image: postgres:15
+    ports:
+      - "5432:5432"
