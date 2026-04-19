@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   workflow_run:
-    workflows: ["Docker Build & Push"]
+    workflows: ["Docker and Build"]
     types:
       - completed
 
@@ -28,11 +28,12 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
-          script: cd app
+          script: |
+            cd app
 
             docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
 
-            docker pull ghcr.io/${{ github.repository }}-backend:${{ github.sha }}
-            docker pull ghcr.io/${{ github.repository }}-frontend:${{ github.sha }}
+            docker pull ghcr.io/${{ github.repository }}-backend:${{ github.event.workflow_run.head_sha }}
+            docker pull ghcr.io/${{ github.repository }}-frontend:${{ github.event.workflow_run.head_sha }}
 
             docker compose up -d
