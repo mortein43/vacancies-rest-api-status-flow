@@ -8,6 +8,10 @@ on:
       - "docker/backend/**"
       - ".github/workflows/backend.yml"
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
