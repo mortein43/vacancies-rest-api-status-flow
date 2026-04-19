@@ -27,20 +27,22 @@ jobs:
 
       - name: Build backend
         run: |
-          docker build \
-            -t ghcr.io/$REPO-backend:${{ github.sha }} \
-            -f docker/backend/Dockerfile \
-            backend
+          docker build -t ghcr.io/$REPO-backend:${{ github.sha }} \
+                      -t ghcr.io/$REPO-backend:latest \
+                      -f docker/backend/Dockerfile ./backend
 
       - name: Build frontend
         run: |
-          docker build \
-            -t ghcr.io/$REPO-frontend:${{ github.sha }} \
-            -f docker/frontend/Dockerfile \
-            frontend
+          docker build -t ghcr.io/$REPO-frontend:${{ github.sha }} \
+                      -t ghcr.io/$REPO-frontend:latest \
+                      -f docker/frontend/Dockerfile ./frontend
 
       - name: Push backend
-        run: docker push ghcr.io/$REPO-backend:${{ github.sha }}
+        run: |
+          docker push ghcr.io/$REPO-backend:${{ github.sha }}
+          docker push ghcr.io/$REPO-backend:latest
 
       - name: Push frontend
-        run: docker push ghcr.io/$REPO-frontend:${{ github.sha }}
+        run: |
+          docker push ghcr.io/$REPO-frontend:${{ github.sha }}
+          docker push ghcr.io/$REPO-frontend:latest
